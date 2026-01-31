@@ -38,6 +38,8 @@ jobs:
 
       - name: Update year in headers
         uses: octivi/update-copyright-year@v1
+        with:
+          exclude_paths: README.md .github/workflows
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v8

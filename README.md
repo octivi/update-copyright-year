@@ -38,9 +38,9 @@ Note: The action always performs a cleanup pass to collapse ranges like `2026-20
 Update regex (default) matches both single years and ranges:
 
 ```text
-Copyright 2021
-Copyright (c) 2021-2024
-Copyright 2021 ACME Inc.
+Copyright 2021-2026
+Copyright (c) 2021-2026
+Copyright 2021-2026 ACME Inc.
 ```
 
 Assuming the current year is 2026, the updates become:
@@ -54,7 +54,7 @@ Copyright 2021-2026 ACME Inc.
 Cleanup regex (always applied) then collapses:
 
 ```text
-Copyright 2026-2026
+Copyright 2026
 ```
 
 to:

@@ -13,7 +13,7 @@ Keeps year ranges in headers accurate with minimal maintenance, especially for r
 ## Getting started
 
 1) Add the action to your workflow (see "Example workflow" below).
-2) Optionally set `targets`, `exclude_paths`, and `headers_regexp`.
+2) Optionally set `targets`, `exclude_paths`, `organization_regexp`, and `headers_regexp`.
 3) Run the workflow and review changes (optionally create a PR in your workflow).
 
 ## Inputs
@@ -23,6 +23,7 @@ Keeps year ranges in headers accurate with minimal maintenance, especially for r
 | `targets` | No | `.` | Directories to scan (space-separated), e.g. `. src scripts` |
 | `exclude_paths` | No | `.github/workflows` | Paths to exclude (space-separated), e.g. `.github/workflows build` |
 | `include_glob` | No | *(empty)* | Optional glob patterns to include (space-separated), e.g. `**/*.{sh,py,js}` |
+| `organization_regexp` | No | *(empty)* | Optional regexp snippet for the organization/person name after the year (used only when `headers_regexp` is empty) |
 | `headers_regexp` | No | *(see below)* | Array of `sed` regexps (one per line). Use `{{CURRENT_YEAR}}` as a placeholder |
 
 Default `headers_regexp`:
@@ -32,6 +33,14 @@ s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\1\2-{{CURRENT_Y
 ```
 
 Note: The action always performs a cleanup pass to collapse ranges like `2026-2026` back to `2026`.
+When `organization_regexp` is set and `headers_regexp` is empty, the default becomes:
+
+```text
+s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+YOUR_ORG_REGEXP)?$/\1\2-{{CURRENT_YEAR}}\4/
+```
+
+If `headers_regexp` is provided, it always takes precedence over `organization_regexp`.
+If you want a literal organization name, escape regexp metacharacters (for example, dots).
 
 ## Examples
 
@@ -100,8 +109,9 @@ jobs:
           targets: ". src scripts"
           exclude_paths: ".github/workflows build"
           include_glob: "**/*.{sh,py,js}"
-          headers_regexp: |
-            s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\1\2-{{CURRENT_YEAR}}\4/
+          organization_regexp: "IMAGIN sp\\. z o\\.o\\."
+          # headers_regexp: |
+          #   s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\1\2-{{CURRENT_YEAR}}\4/
 
       # Optional: create PR in your own workflow
       - name: Create Pull Request

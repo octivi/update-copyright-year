@@ -24,6 +24,10 @@ inputs:
     description: "Optional glob patterns to include (space-separated), e.g. '**/*.{sh,py,js}'"
     required: false
     default: ""
+  organization_regexp:
+    description: "Optional regexp snippet for the organization/person name after the year (used only when headers_regexp is empty)."
+    required: false
+    default: ""
   headers_regexp:
     description: "Array of sed regexps (one per line). Use {{CURRENT_YEAR}} as a placeholder."
     required: false
@@ -42,6 +46,7 @@ runs:
         targets="${{ inputs.targets }}"
         exclude_paths="${{ inputs.exclude_paths }}"
         include_glob="${{ inputs.include_glob }}"
+        organization_regexp="${{ inputs.organization_regexp }}"
         headers_regexp="${{ inputs.headers_regexp }}"
 
         if [[ -z "${targets//[[:space:]]/}" ]]; then
@@ -50,7 +55,12 @@ runs:
         fi
 
         if [[ -z "${headers_regexp//[[:space:]]/}" ]]; then
-          headers_regexp=$'s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\\1\\2-{{CURRENT_YEAR}}\\4/'
+          if [[ -z "${organization_regexp//[[:space:]]/}" ]]; then
+            headers_regexp=$'s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\\1\\2-{{CURRENT_YEAR}}\\4/'
+          else
+            default_with_org='s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+{{ORG}})?$/\1\2-{{CURRENT_YEAR}}\4/'
+            headers_regexp="${default_with_org/{{ORG}}/${organization_regexp}}"
+          fi
         fi
 
         # Always collapse ranges like 2026-2026 back to 2026 after updates.

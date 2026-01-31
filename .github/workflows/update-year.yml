@@ -40,8 +40,7 @@ jobs:
         uses: octivi/update-copyright-year@v1
         with:
           exclude_paths: ".github/workflows README.md"
-          headers_regexp: |
-            s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+IMAGIN sp\. z o\.o\.)?$/\1\2-{{CURRENT_YEAR}}\4/
+          organization_regexp: "IMAGIN [sS]p\\. z o\\.o\\."
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v8

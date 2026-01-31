@@ -78,7 +78,7 @@ s/^(.*Copyright[^0-9]*)([0-9]{4})([[:space:]]*,.*)?$/\1\2-{{CURRENT_YEAR}}\3/
 ## Limitations
 
 - Only files detected as `text/*` by the `file` command are edited.
-- Uses GNU `sed` options available on `ubuntu-latest` runners.
+- Uses GNU `sed` options available on `ubuntu-latest` and `ubuntu-slim` runners.
 - Include patterns are Bash globs matched against the file path (with or without a leading `./`).
 
 ## Example workflow

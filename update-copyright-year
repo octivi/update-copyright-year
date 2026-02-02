@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2025-2026  IMAGIN sp. z o.o.
+# SPDX-FileContributor: Marcin Engelmann <mengelmann@octivi.com>
+# SPDX-License-Identifier: MIT
+#
+# This file is part of the configuration created by Octivi's DevOps team.
+# Details at https://octivi.com/devops
+#
+# Update copyright years in source file headers by scanning targets and applying header regexes.
+
+# Octivi Bash Boilerplate (OBB) Header
+# Part of Octivi Bash Boilerplate https://github.com/octivi/bash-boilerplate
+################################################################################
+# Unofficial Bash "Strict Mode"
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+# Define common constants regardless if they are used in the script
+__my_name="$(basename "${BASH_SOURCE[0]}")"
+readonly __my_name
+__my_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly __my_dir
+__my_path="${__my_dir}/${__my_name}"
+# shellcheck disable=SC2034
+readonly __my_path
+__my_args="$*"
+# shellcheck disable=SC2034
+readonly __my_args
+# Set IFS to just newline and tab
+IFS=$'\n\t'
+################################################################################
+
+usage() {
+  cat <<USAGE
+Usage: ${__my_name} [options]
+
+Options:
+  --targets "dir1 dir2"           Directories to scan (default: .)
+  --exclude-paths "path1 path2"   Paths to exclude (default: .github/workflows)
+  --include-glob "glob1 glob2"    Optional include globs (default: empty)
+  --organization-regexp "regex"   Optional org/person regexp (used when headers-regexp is empty)
+  --headers-regexp "regex..."     Sed regexps (one per line), use {{CURRENT_YEAR}}
+  -h, --help                      Show this help message
+USAGE
+}
+
+die() {
+  echo "ERROR: $*" 1>&2
+  exit 1
+}
+
+# Defaults (env overrides with fallbacks)
+TARGETS="${TARGETS:-.}"
+EXCLUDE_PATHS="${EXCLUDE_PATHS:-.github/workflows}"
+INCLUDE_GLOB="${INCLUDE_GLOB-}"
+ORGANIZATION_REGEXP="${ORGANIZATION_REGEXP-}"
+HEADERS_REGEXP="${HEADERS_REGEXP-}"
+CURRENT_YEAR="${CURRENT_YEAR-}"
+
+# CLI overrides
+while (($#)); do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --targets)
+      shift
+      [[ $# -gt 0 ]] || die "Missing value for --targets"
+      TARGETS="$1"
+      ;;
+    --exclude-paths)
+      shift
+      [[ $# -gt 0 ]] || die "Missing value for --exclude-paths"
+      EXCLUDE_PATHS="$1"
+      ;;
+    --include-glob)
+      shift
+      [[ $# -gt 0 ]] || die "Missing value for --include-glob"
+      INCLUDE_GLOB="$1"
+      ;;
+    --organization-regexp)
+      shift
+      [[ $# -gt 0 ]] || die "Missing value for --organization-regexp"
+      ORGANIZATION_REGEXP="$1"
+      ;;
+    --headers-regexp)
+      shift
+      [[ $# -gt 0 ]] || die "Missing value for --headers-regexp"
+      HEADERS_REGEXP="$1"
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      die "Unknown option: $1"
+      ;;
+  esac
+  shift
+done
+
+if [[ $# -gt 0 ]]; then
+  die "Unexpected arguments: $*"
+fi
+
+if [[ -n "${ORGANIZATION_REGEXP}" ]]; then
+  # Normalize double backslashes so callers can pass \ in YAML/shell.
+  ORGANIZATION_REGEXP="${ORGANIZATION_REGEXP//\\\\/\\}"
+fi
+
+if [[ -n "${HEADERS_REGEXP}" ]]; then
+  # Normalize double backslashes so callers can pass \\ in YAML/shell.
+  HEADERS_REGEXP="${HEADERS_REGEXP//\\\\/\\}"
+fi
+
+if [[ -n "${CURRENT_YEAR}" ]]; then
+  current_year="${CURRENT_YEAR}"
+else
+  current_year="$(date +%Y)"
+fi
+
+if [[ -z "${TARGETS//[[:space:]]/}" ]]; then
+  echo "No targets provided; nothing to do."
+  exit 0
+fi
+
+if [[ -z "${HEADERS_REGEXP//[[:space:]]/}" ]]; then
+  if [[ -z "${ORGANIZATION_REGEXP//[[:space:]]/}" ]]; then
+    HEADERS_REGEXP=$'s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\\1\\2-{{CURRENT_YEAR}}\\4/'
+  else
+    default_with_org='s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+{{ORG}})?$/\1\2-{{CURRENT_YEAR}}\4/'
+    HEADERS_REGEXP="${default_with_org//\{\{ORG\}\}/${ORGANIZATION_REGEXP}}"
+  fi
+fi
+
+# Always collapse ranges like 2026-2026 back to 2026 after updates.
+# This keeps single-year headers clean when the current year equals the start year.
+if [[ -z "${ORGANIZATION_REGEXP//[[:space:]]/}" ]]; then
+  cleanup_regex='s/^(.*Copyright[^0-9]*)([0-9]{4})-\2([[:space:]]+.*)?$/\1\2\3/'
+else
+  cleanup_with_org='s/^(.*Copyright[^0-9]*)([0-9]{4})-\2([[:space:]]+{{ORG}})?$/\1\2\3/'
+  cleanup_regex="${cleanup_with_org//\{\{ORG\}\}/${ORGANIZATION_REGEXP}}"
+fi
+
+IFS=$' \n\t' read -r -a DIRS <<< "${TARGETS}"
+IFS=$' \n\t' read -r -a EXCLUDES <<< "${EXCLUDE_PATHS}"
+IFS=$' \n\t' read -r -a INCLUDES <<< "${INCLUDE_GLOB}"
+
+mapfile -t REGEXPS <<< "${HEADERS_REGEXP}"
+
+sed_args=()
+for re in "${REGEXPS[@]}"; do
+  [[ -n "${re}" ]] || continue
+  re="${re//\{\{CURRENT_YEAR\}\}/${current_year}}"
+  sed_args+=(-e "${re}")
+done
+
+if [[ "${#sed_args[@]}" -eq 0 ]]; then
+  echo "headers_regexp must contain at least one non-empty regexp."
+  exit 1
+fi
+
+shopt -s globstar
+valid_dirs=0
+for dir in "${DIRS[@]}"; do
+  [[ -d "${dir}" ]] || continue
+  valid_dirs=$((valid_dirs + 1))
+
+  prune_args=()
+  for exclude in "${EXCLUDES[@]}"; do
+    [[ -n "${exclude}" ]] || continue
+    if [[ "${exclude}" == /* ]]; then
+      prune_args+=(-path "${exclude}" -prune -o)
+    else
+      exclude="${exclude#./}"
+      prune_args+=(-path "${dir%/}/${exclude}" -prune -o)
+    fi
+  done
+
+  find "${dir}" "${prune_args[@]}" -type f -print0 | while IFS= read -r -d '' file; do
+    if [[ "${#INCLUDES[@]}" -gt 0 ]]; then
+      matched=false
+      for pat in "${INCLUDES[@]}"; do
+        [[ -n "${pat}" ]] || continue
+        # shellcheck disable=SC2053
+        if [[ "${file}" == ${pat} || "${file#./}" == ${pat} ]]; then
+          matched=true
+          break
+        fi
+      done
+      [[ "${matched}" == true ]] || continue
+    fi
+
+    if [[ "$(file --mime-type --brief "${file}")" == text/* ]]; then
+      sed \
+        --regexp-extended \
+        --in-place \
+        "${sed_args[@]}" \
+        -e "${cleanup_regex}" \
+        "${file}"
+    fi
+  done
+done
+
+if [[ "${valid_dirs}" -eq 0 ]]; then
+  echo "No valid target directories found; nothing to do."
+  exit 0
+fi

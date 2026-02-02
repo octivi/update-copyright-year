@@ -25,7 +25,7 @@ Keeps year ranges in headers accurate with minimal maintenance, especially for r
 | Name | Required | Default | Description |
 | --- | --- | --- | --- |
 | `targets` | No | `.` | Directories to scan (space-separated), e.g. `. src scripts` |
-| `exclude_paths` | No | `.github/workflows` | Paths to exclude (space-separated), e.g. `.github/workflows build` |
+| `exclude_paths` | No | `.github/workflows` | Paths to exclude (space-separated), e.g. `.github/workflows build`. Relative paths are resolved against each target; absolute paths are supported. |
 | `include_glob` | No | *(empty)* | Optional glob patterns to include (space-separated), e.g. `**/*.{sh,py,js}` |
 | `organization_regexp` | No | *(empty)* | Optional regexp snippet for the organization/person name after the year (used only when `headers_regexp` is empty) |
 | `headers_regexp` | No | *(see below)* | Array of `sed` regexps (one per line). Use `{{CURRENT_YEAR}}` as a placeholder |
@@ -118,6 +118,7 @@ Set `CURRENT_YEAR` to make tests deterministic.
 - Only files detected as `text/*` by the `file` command are edited.
 - Uses GNU `sed` options available on `ubuntu-latest` and `ubuntu-slim` runners.
 - Include patterns are Bash globs matched against the file path (with or without a leading `./`).
+- Exclude paths are resolved per target directory; absolute paths are matched as-is.
 
 ## Example workflow
 

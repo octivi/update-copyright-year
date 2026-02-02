@@ -37,88 +37,10 @@ runs:
   steps:
     - name: Update year in headers
       shell: bash
-      run: |
-        set -o errexit -o nounset -o pipefail
-        IFS=$'\n\t'
-
-        current_year="$(date +%Y)"
-        targets="${{ inputs.targets }}"
-        exclude_paths="${{ inputs.exclude_paths }}"
-        include_glob="${{ inputs.include_glob }}"
-        organization_regexp="${{ inputs.organization_regexp }}"
-        headers_regexp="${{ inputs.headers_regexp }}"
-
-        if [[ -z "${targets//[[:space:]]/}" ]]; then
-          echo "No targets provided; nothing to do."
-          exit 0
-        fi
-
-        if [[ -z "${headers_regexp//[[:space:]]/}" ]]; then
-          if [[ -z "${organization_regexp//[[:space:]]/}" ]]; then
-            headers_regexp=$'s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\\1\\2-{{CURRENT_YEAR}}\\4/'
-          else
-            default_with_org='s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+{{ORG}})?$/\1\2-{{CURRENT_YEAR}}\4/'
-            headers_regexp="${default_with_org/{{ORG}}/${organization_regexp}}"
-          fi
-        fi
-
-        # Always collapse ranges like 2026-2026 back to 2026 after updates.
-        # This keeps single-year headers clean when the current year equals the start year.
-        cleanup_regex='s/^(.*Copyright[^0-9]*)([0-9]{4})-\2([[:space:]]+.*)?$/\1\2\3/'
-
-        IFS=$' \n\t' read -r -a DIRS <<< "${targets}"
-        IFS=$' \n\t' read -r -a EXCLUDES <<< "${exclude_paths}"
-        IFS=$' \n\t' read -r -a INCLUDES <<< "${include_glob}"
-
-        mapfile -t REGEXPS <<< "${headers_regexp}"
-        sed_args=()
-        for re in "${REGEXPS[@]}"; do
-          [[ -n "${re}" ]] || continue
-          re="${re//{{CURRENT_YEAR}}/${current_year}}"
-          sed_args+=(-e "${re}")
-        done
-
-        if [[ "${#sed_args[@]}" -eq 0 ]]; then
-          echo "headers_regexp must contain at least one non-empty regexp."
-          exit 1
-        fi
-
-        prune_args=()
-        for exclude in "${EXCLUDES[@]}"; do
-          prune_args+=(-path "./${exclude}" -prune -o)
-        done
-
-        shopt -s globstar
-        valid_dirs=0
-        for dir in "${DIRS[@]}"; do
-          [[ -d "${dir}" ]] || continue
-          valid_dirs=$((valid_dirs + 1))
-
-          find "${dir}" "${prune_args[@]}" -type f -print0 | while IFS= read -r -d '' file; do
-            if [[ "${#INCLUDES[@]}" -gt 0 ]]; then
-              matched=false
-              for pat in "${INCLUDES[@]}"; do
-                [[ -n "${pat}" ]] || continue
-                if [[ "${file}" == ${pat} || "${file#./}" == ${pat} ]]; then
-                  matched=true
-                  break
-                fi
-              done
-              [[ "${matched}" == true ]] || continue
-            fi
-
-            if [[ "$(file --mime-type --brief "${file}")" == text/* ]]; then
-              sed \
-                --regexp-extended \
-                --in-place \
-                "${sed_args[@]}" \
-                -e "${cleanup_regex}" \
-                "${file}"
-            fi
-          done
-        done
-
-        if [[ "${valid_dirs}" -eq 0 ]]; then
-          echo "No valid target directories found; nothing to do."
-          exit 0
-        fi
+      env:
+        TARGETS: ${{ inputs.targets }}
+        EXCLUDE_PATHS: ${{ inputs.exclude_paths }}
+        INCLUDE_GLOB: ${{ inputs.include_glob }}
+        ORGANIZATION_REGEXP: ${{ inputs.organization_regexp }}
+        HEADERS_REGEXP: ${{ inputs.headers_regexp }}
+      run: ${{ github.action_path }}/update-copyright-year

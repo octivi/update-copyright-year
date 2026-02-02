@@ -82,7 +82,7 @@ Copyright 2021-2026 ACME Inc.
 Cleanup regex (always applied) then collapses:
 
 ```text
-Copyright 2026
+Copyright 2026-2026
 ```
 
 to:

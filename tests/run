@@ -1,0 +1,383 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2025-2026  IMAGIN sp. z o.o.
+# SPDX-FileContributor: Marcin Engelmann <mengelmann@octivi.com>
+# SPDX-License-Identifier: MIT
+#
+# This file is part of the configuration created by Octivi's DevOps team.
+# Details at https://octivi.com/devops
+
+# Octivi Bash Boilerplate (OBB) Header
+# Part of Octivi Bash Boilerplate https://github.com/octivi/bash-boilerplate
+################################################################################
+# Unofficial Bash "Strict Mode"
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+# Define common constants regardless if they are used in the script
+__my_name="$(basename "${BASH_SOURCE[0]}")"
+readonly __my_name
+__my_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly __my_dir
+__my_path="${__my_dir}/${__my_name}"
+# shellcheck disable=SC2034
+readonly __my_path
+__my_args="$*"
+# shellcheck disable=SC2034
+readonly __my_args
+# Set IFS to just newline and tab
+IFS=$'\n\t'
+################################################################################
+UPDATE_COPYRIGHT_YEAR="$(cd "${__my_dir}/.." && pwd)/update-copyright-year"
+
+TMP_DIRS=()
+CAPTURED_OUTPUT=""
+CAPTURED_STATUS=0
+
+cleanup() {
+  local dir
+  for dir in "${TMP_DIRS[@]}"; do
+    [[ -n "${dir}" ]] && rm -rf "${dir}"
+  done
+}
+
+trap cleanup EXIT
+
+fail() {
+  echo "FAIL: $*" 1>&2
+  exit 1
+}
+
+assert_contains() {
+  local file="$1"
+  local expected="$2"
+  if ! grep -q -- "${expected}" "${file}"; then
+    echo "Expected to find: ${expected}" 1>&2
+    echo "In file: ${file}" 1>&2
+    echo "---" 1>&2
+    sed -n '1,200p' "${file}" 1>&2
+    echo "---" 1>&2
+    fail "assert_contains"
+  fi
+}
+
+assert_not_contains() {
+  local file="$1"
+  local expected="$2"
+  if grep -q -- "${expected}" "${file}"; then
+    echo "Expected NOT to find: ${expected}" 1>&2
+    echo "In file: ${file}" 1>&2
+    echo "---" 1>&2
+    sed -n '1,200p' "${file}" 1>&2
+    echo "---" 1>&2
+    fail "assert_not_contains"
+  fi
+}
+
+assert_equal() {
+  local actual="$1"
+  local expected="$2"
+  if [[ "${actual}" != "${expected}" ]]; then
+    echo "Expected: ${expected}" 1>&2
+    echo "Actual:   ${actual}" 1>&2
+    fail "assert_equal"
+  fi
+}
+
+assert_str_contains() {
+  local haystack="$1"
+  local expected="$2"
+  if [[ "${haystack}" != *"${expected}"* ]]; then
+    echo "Expected to find: ${expected}" 1>&2
+    echo "In output:" 1>&2
+    echo "${haystack}" 1>&2
+    fail "assert_str_contains"
+  fi
+}
+
+assert_str_not_contains() {
+  local haystack="$1"
+  local expected="$2"
+  if [[ "${haystack}" == *"${expected}"* ]]; then
+    echo "Expected NOT to find: ${expected}" 1>&2
+    echo "In output:" 1>&2
+    echo "${haystack}" 1>&2
+    fail "assert_str_not_contains"
+  fi
+}
+
+run_and_capture() {
+  local out
+  local status
+  set +e
+  out="$("$@" 2>&1)"
+  status=$?
+  set -e
+  CAPTURED_OUTPUT="${out}"
+  CAPTURED_STATUS=${status}
+}
+
+make_tmp() {
+  local dir
+  dir="$(mktemp -d)"
+  TMP_DIRS+=("${dir}")
+  printf "%s\n" "${dir}"
+}
+
+run_test() {
+  local name="$1"
+  shift
+  echo "==> ${name}"
+  "$@"
+}
+
+test_default_update() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/a.txt"
+Copyright 2021 ACME Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" --targets "${tmp}" --include-glob "**/*.txt"
+
+  assert_contains "${tmp}/a.txt" "Copyright 2021-2030 ACME Inc."
+}
+
+test_cleanup_range() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/b.txt"
+Copyright 2030
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" --targets "${tmp}" --include-glob "**/*.txt"
+
+  assert_contains "${tmp}/b.txt" "Copyright 2030"
+  assert_not_contains "${tmp}/b.txt" "2030-2030"
+}
+
+test_organization_regexp() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/c.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  cat <<'TXT' > "${tmp}/d.txt"
+Copyright 2021-2026 Other Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --include-glob "**/*.txt" \
+    --organization-regexp "ACME Inc\."
+
+  assert_contains "${tmp}/c.txt" "Copyright 2021-2030 ACME Inc."
+  assert_contains "${tmp}/d.txt" "Copyright 2021-2026 Other Inc."
+  assert_not_contains "${tmp}/d.txt" "2021-2030"
+}
+
+test_organization_regexp_double_backslash() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/e.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --include-glob "**/*.txt" \
+    --organization-regexp 'ACME Inc\\.'
+
+  assert_contains "${tmp}/e.txt" "Copyright 2021-2030 ACME Inc."
+}
+
+test_headers_regexp_override() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/f.txt"
+SPDX-FileCopyrightText: 2019-2026 ACME Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --include-glob "**/*.txt" \
+    --headers-regexp $'s/^(SPDX-FileCopyrightText: [0-9]{4})(-[0-9]{4})?(.*)$/\\1-{{CURRENT_YEAR}}\\3/'
+
+  assert_contains "${tmp}/f.txt" "SPDX-FileCopyrightText: 2019-2030 ACME Inc."
+}
+
+test_headers_regexp_multiline() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/g.txt"
+Copyright 2021-2026 ACME Inc.
+SPDX-FileCopyrightText: 2019-2026 ACME Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --include-glob "**/*.txt" \
+    --headers-regexp $'s/^(Copyright [0-9]{4})(-[0-9]{4})?(.*)$/\\1-{{CURRENT_YEAR}}\\3/\n'\
+'s/^(SPDX-FileCopyrightText: [0-9]{4})(-[0-9]{4})?(.*)$/\\1-{{CURRENT_YEAR}}\\3/'
+
+  assert_contains "${tmp}/g.txt" "Copyright 2021-2030 ACME Inc."
+  assert_contains "${tmp}/g.txt" "SPDX-FileCopyrightText: 2019-2030 ACME Inc."
+}
+
+test_headers_regexp_whitespace_uses_default() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/h.txt"
+Copyright 2021 ACME Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --include-glob "**/*.txt" \
+    --headers-regexp $'\n  \n'
+
+  assert_contains "${tmp}/h.txt" "Copyright 2021-2030 ACME Inc."
+}
+
+test_headers_regexp_double_backslash() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  cat <<'TXT' > "${tmp}/i.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  HEADERS_REGEXP='s/^(Copyright [0-9]{4})(-[0-9]{4})?(.*)$/\\1-{{CURRENT_YEAR}}\\3/' \
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --include-glob "**/*.txt"
+
+  assert_contains "${tmp}/i.txt" "Copyright 2021-2030 ACME Inc."
+}
+
+test_exclude_paths() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  mkdir -p "${tmp}/.github/workflows"
+  cat <<'TXT' > "${tmp}/.github/workflows/j.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  cat <<'TXT' > "${tmp}/k.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  (
+    cd "${tmp}"
+    CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+      --targets "." \
+      --exclude-paths ".github/workflows" \
+      --include-glob "**/*.txt"
+  )
+
+  assert_contains "${tmp}/k.txt" "Copyright 2021-2030 ACME Inc."
+  assert_contains "${tmp}/.github/workflows/j.txt" "Copyright 2021-2026 ACME Inc."
+  assert_not_contains "${tmp}/.github/workflows/j.txt" "2021-2030"
+}
+
+test_absolute_targets_with_absolute_exclude() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  mkdir -p "${tmp}/.github/workflows"
+  cat <<'TXT' > "${tmp}/.github/workflows/l.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  cat <<'TXT' > "${tmp}/m.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" \
+    --targets "${tmp}" \
+    --exclude-paths "${tmp}/.github/workflows" \
+    --include-glob "**/*.txt"
+
+  assert_contains "${tmp}/m.txt" "Copyright 2021-2030 ACME Inc."
+  assert_contains "${tmp}/.github/workflows/l.txt" "Copyright 2021-2026 ACME Inc."
+  assert_not_contains "${tmp}/.github/workflows/l.txt" "2021-2030"
+}
+
+test_binary_files_skipped() {
+  local tmp
+  tmp="$(make_tmp)"
+
+  printf 'Copyright 2021-2026 ACME Inc.\0binary' > "${tmp}/n.bin"
+
+  CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" --targets "${tmp}"
+
+  assert_contains "${tmp}/n.bin" "Copyright 2021-2026 ACME Inc."
+  assert_not_contains "${tmp}/n.bin" "2021-2030"
+}
+
+test_no_targets_whitespace() {
+  run_and_capture env CURRENT_YEAR=2030 "${UPDATE_COPYRIGHT_YEAR}" --targets "   "
+
+  assert_equal "${CAPTURED_STATUS}" "0"
+  assert_str_contains "${CAPTURED_OUTPUT}" "No targets provided; nothing to do."
+}
+
+test_no_valid_target_dirs() {
+  run_and_capture "${UPDATE_COPYRIGHT_YEAR}" --targets "/path/does-not-exist"
+
+  assert_equal "${CAPTURED_STATUS}" "0"
+  assert_str_contains "${CAPTURED_OUTPUT}" "No valid target directories found; nothing to do."
+}
+
+test_cli_unknown_option() {
+  run_and_capture "${UPDATE_COPYRIGHT_YEAR}" --nope
+
+  assert_equal "${CAPTURED_STATUS}" "1"
+  assert_str_contains "${CAPTURED_OUTPUT}" "Unknown option: --nope"
+}
+
+test_cli_missing_value() {
+  run_and_capture "${UPDATE_COPYRIGHT_YEAR}" --targets
+
+  assert_equal "${CAPTURED_STATUS}" "1"
+  assert_str_contains "${CAPTURED_OUTPUT}" "Missing value for --targets"
+}
+
+test_cli_unexpected_args() {
+  run_and_capture "${UPDATE_COPYRIGHT_YEAR}" -- --surprise
+
+  assert_equal "${CAPTURED_STATUS}" "1"
+  assert_str_contains "${CAPTURED_OUTPUT}" "Unexpected arguments: --surprise"
+}
+
+main() {
+  [[ -x "${UPDATE_COPYRIGHT_YEAR}" ]] || fail "Script not executable: ${UPDATE_COPYRIGHT_YEAR}"
+
+  run_test "default update" test_default_update
+  run_test "cleanup single-year range" test_cleanup_range
+  run_test "organization regexp" test_organization_regexp
+  run_test "organization regexp double backslash" test_organization_regexp_double_backslash
+  run_test "headers regexp override" test_headers_regexp_override
+  run_test "headers regexp multiline" test_headers_regexp_multiline
+  run_test "headers regexp whitespace uses default" test_headers_regexp_whitespace_uses_default
+  run_test "headers regexp double backslash" test_headers_regexp_double_backslash
+  run_test "exclude paths" test_exclude_paths
+  run_test "absolute targets with absolute exclude" test_absolute_targets_with_absolute_exclude
+  run_test "binary files skipped" test_binary_files_skipped
+  run_test "no targets whitespace" test_no_targets_whitespace
+  run_test "no valid target dirs" test_no_valid_target_dirs
+  run_test "cli unknown option" test_cli_unknown_option
+  run_test "cli missing value" test_cli_missing_value
+  run_test "cli unexpected args" test_cli_unexpected_args
+
+  echo "All tests passed."
+}
+
+main "$@"

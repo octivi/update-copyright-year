@@ -1,5 +1,7 @@
 # Update Copyright Year GitHub Action
 
+[![license](https://img.shields.io/github/license/octivi/bash-boilerplate)](https://choosealicense.com/licenses/mit/)
+
 GitHub Action that updates the copyright year in file headers across your repository.
 
 ## What the project does

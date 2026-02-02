@@ -29,10 +29,9 @@ inputs:
     required: false
     default: ""
   headers_regexp:
-    description: "Array of sed regexps (one per line). Use {{CURRENT_YEAR}} as a placeholder."
+    description: "Array of sed regexps (one per line). Use {{CURRENT_YEAR}} as a placeholder. Leave empty to use the built-in default (optionally constrained by organization_regexp)."
     required: false
-    default: |
-      s/^(.*Copyright[^0-9]*)([0-9]{4})(-[0-9]{4})?([[:space:]]+.*)?$/\1\2-{{CURRENT_YEAR}}\4/
+    default: ""
 runs:
   using: composite
   steps:

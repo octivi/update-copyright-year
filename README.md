@@ -134,7 +134,7 @@ jobs:
   update-year:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: octivi/update-copyright-year@v1
         with:

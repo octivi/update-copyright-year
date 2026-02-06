@@ -162,8 +162,10 @@ jobs:
 
 ## Getting help
 
-If you run into issues, open a GitHub issue in this repository and include a minimal reproduction (sample file + workflow snippet).
+If you run into issues, open a GitHub issue in this repository and include a minimal reproduction
+(sample file + workflow snippet).
 
 ## Maintainers and contributors
 
-Maintained by the [Octivi DevOps team](https://octivi.com/devops). Contributions are welcome via pull requests.
+Maintained by the [Octivi DevOps team](https://octivi.com/devops). Contributions are welcome via
+pull requests.

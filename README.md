@@ -16,6 +16,19 @@ Scans files in selected directories and updates copyright header years using con
 
 Keeps year ranges in headers accurate with minimal maintenance, especially for repos with many files or templates.
 
+## Why choose this action
+
+- Pure Bash implementation with minimal dependencies.
+- Fast startup: no `npm`/`pip` install step during workflow execution.
+- Lower supply-chain and maintenance overhead: no runtime pinning, lockfiles, or dependency CVEs.
+- Easier security audit: all logic lives in a small, readable script.
+- Covered by automated tests (`./tests/run`) and CI.
+- Works on `ubuntu-slim`, which can help reduce runner costs:
+  https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+- Can be used both as a GitHub Action and as a standalone script.
+- Released under the MIT License: a short and simple permissive license.
+- Documented security policy: [SECURITY.md](./SECURITY.md).
+
 ## Getting started
 
 1) Add the action to your workflow (see "Example workflow" below).

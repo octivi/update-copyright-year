@@ -68,9 +68,9 @@ If you want a literal organization name, escape regexp metacharacters (for examp
 Update regex (default) matches both single years and ranges:
 
 ```text
-Copyright 2021-2026
-Copyright (c) 2021-2026
-Copyright 2021-2026 ACME Inc.
+Copyright 2021-2023
+Copyright (c) 2021-2023
+Copyright 2021-2023 ACME Inc.
 ```
 
 Assuming the current year is 2026, the updates become:

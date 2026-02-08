@@ -26,9 +26,9 @@ Keeps year ranges in headers accurate with minimal maintenance, especially for r
 
 | Name | Required | Default | Description |
 | --- | --- | --- | --- |
-| `targets` | No | `.` | Directories to scan (space-separated), e.g. `. src scripts` |
-| `exclude_paths` | No | `.github/workflows` | Paths to exclude (space-separated), e.g. `.github/workflows build`. Relative paths are resolved against each target; absolute paths are supported. |
-| `include_glob` | No | *(empty)* | Optional glob patterns to include (space-separated), e.g. `**/*.{sh,py,js}` |
+| `targets` | No | `.` | Directories to scan (space-, comma- or newline-separated), e.g. `. src scripts` |
+| `exclude_paths` | No | `.github/workflows` | Paths to exclude (space-, comma- or newline-separated), e.g. `.github/workflows build`. Relative paths are resolved against each target; absolute paths are supported. |
+| `include_glob` | No | *(empty)* | Optional glob patterns to include (space-, comma- or newline-separated), e.g. `**/*.{sh,py,js}` |
 | `organization_regexp` | No | *(empty)* | Optional regexp snippet for the organization/person name after the year (used only when `headers_regexp` is empty) |
 | `headers_regexp` | No | *(see below)* | Array of `sed` regexps (one per line). Use `{{CURRENT_YEAR}}` as a placeholder |
 
@@ -46,6 +46,7 @@ Run locally from this repo:
 
 Options map 1:1 to the action inputs. You can also set them via env vars:
 `TARGETS`, `EXCLUDE_PATHS`, `INCLUDE_GLOB`, `ORGANIZATION_REGEXP`, `HEADERS_REGEXP`, `CURRENT_YEAR`.
+For list inputs (`TARGETS`, `EXCLUDE_PATHS`, `INCLUDE_GLOB`) you can separate values with spaces, commas, newlines, or mix these separators.
 
 Default `headers_regexp`:
 

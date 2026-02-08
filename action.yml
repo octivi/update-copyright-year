@@ -13,15 +13,15 @@ branding:
   color: blue
 inputs:
   targets:
-    description: "Directories to scan (space-separated), e.g. '. src scripts'"
+    description: "Directories to scan (space-, comma- or newline-separated), e.g. '. src scripts'"
     required: false
     default: "."
   exclude_paths:
-    description: "Paths to exclude (space-separated), e.g. '.github/workflows build'"
+    description: "Paths to exclude (space-, comma- or newline-separated), e.g. '.github/workflows build'"
     required: false
     default: ".github/workflows"
   include_glob:
-    description: "Optional glob patterns to include (space-separated), e.g. '**/*.{sh,py,js}'"
+    description: "Optional glob patterns to include (space-, comma- or newline-separated), e.g. '**/*.{sh,py,js}'"
     required: false
     default: ""
   organization_regexp:

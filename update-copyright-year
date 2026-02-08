@@ -42,7 +42,8 @@ Options:
   --headers-regexp headers_regexp         Sed regexps (one per line), use {{CURRENT_YEAR}}
   -h, --help                              Show this help message
 
-For list options, pass a single option-argument and separate items with spaces, for example:
+For list options, pass a single option-argument and separate items with spaces, commas,
+or newlines, for example:
   --targets ". src scripts"
   --exclude-paths ".github/workflows build"
   --include-glob "**/*.{sh,py,js}"
@@ -52,6 +53,25 @@ USAGE
 die() {
   echo "ERROR: $*" 1>&2
   exit 1
+}
+
+append_values() {
+  local target_array_name="$1"
+  local raw_values="$2"
+  local normalized
+  local token
+  local -a tokens=()
+  local -n target_array="${target_array_name}"
+
+  normalized="${raw_values//,/ }"
+  normalized="${normalized//$'\r'/ }"
+  normalized="${normalized//$'\n'/ }"
+
+  IFS=$' \n\t' read -r -a tokens <<< "${normalized}"
+  for token in "${tokens[@]}"; do
+    [[ -n "${token//[[:space:]]/}" ]] || continue
+    target_array+=("${token}")
+  done
 }
 
 # Defaults (env overrides with fallbacks)
@@ -148,9 +168,12 @@ else
   cleanup_regex="${cleanup_with_org//\{\{ORG\}\}/${ORGANIZATION_REGEXP}}"
 fi
 
-IFS=$' \n\t' read -r -a DIRS <<< "${TARGETS}"
-IFS=$' \n\t' read -r -a EXCLUDES <<< "${EXCLUDE_PATHS}"
-IFS=$' \n\t' read -r -a INCLUDES <<< "${INCLUDE_GLOB}"
+declare -a DIRS=()
+declare -a EXCLUDES=()
+declare -a INCLUDES=()
+append_values DIRS "${TARGETS}"
+append_values EXCLUDES "${EXCLUDE_PATHS}"
+append_values INCLUDES "${INCLUDE_GLOB}"
 
 mapfile -t REGEXPS <<< "${HEADERS_REGEXP}"
 

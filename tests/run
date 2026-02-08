@@ -337,6 +337,40 @@ TXT
   assert_not_contains "${tmp}/.github/workflows/l.txt" "2021-2030"
 }
 
+test_multiline_targets_excludes_and_include_glob() {
+  local tmp
+  local targets
+  local excludes
+  local include_glob
+  tmp="$(make_tmp)"
+
+  mkdir -p "${tmp}/src" "${tmp}/docs" "${tmp}/skip"
+  cat <<'TXT' > "${tmp}/src/a.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+  cat <<'TXT' > "${tmp}/docs/b.py"
+Copyright 2021-2026 ACME Inc.
+TXT
+  cat <<'TXT' > "${tmp}/skip/c.txt"
+Copyright 2021-2026 ACME Inc.
+TXT
+
+  printf -v targets '%s\n%s\n%s' "${tmp}/src" "${tmp}/docs" "${tmp}/skip"
+  printf -v excludes '%s\n%s' "${tmp}/skip" "${tmp}/non-existent"
+  include_glob=$'**/*.txt\n**/*.py'
+
+  CURRENT_YEAR=2030 \
+  TARGETS="${targets}" \
+  EXCLUDE_PATHS="${excludes}" \
+  INCLUDE_GLOB="${include_glob}" \
+  "${UPDATE_COPYRIGHT_YEAR}"
+
+  assert_contains "${tmp}/src/a.txt" "Copyright 2021-2030 ACME Inc."
+  assert_contains "${tmp}/docs/b.py" "Copyright 2021-2030 ACME Inc."
+  assert_contains "${tmp}/skip/c.txt" "Copyright 2021-2026 ACME Inc."
+  assert_not_contains "${tmp}/skip/c.txt" "2021-2030"
+}
+
 test_binary_files_skipped() {
   local tmp
   tmp="$(make_tmp)"
@@ -398,6 +432,7 @@ main() {
   run_test "headers regexp double backslash" test_headers_regexp_double_backslash
   run_test "exclude paths" test_exclude_paths
   run_test "absolute targets with absolute exclude" test_absolute_targets_with_absolute_exclude
+  run_test "multiline targets excludes and include_glob" test_multiline_targets_excludes_and_include_glob
   run_test "binary files skipped" test_binary_files_skipped
   run_test "no targets whitespace" test_no_targets_whitespace
   run_test "no valid target dirs" test_no_valid_target_dirs

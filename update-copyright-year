@@ -31,15 +31,21 @@ IFS=$'\n\t'
 
 usage() {
   cat <<USAGE
-Usage: ${__my_name} [options]
+Usage: ${__my_name} [--targets targets] [--exclude-paths exclude_paths] [--include-glob include_glob] [--organization-regexp organization_regexp] [--headers-regexp headers_regexp] [--help|-h]
 
 Options:
-  --targets "dir1 dir2"           Directories to scan (default: .)
-  --exclude-paths "path1 path2"   Paths to exclude (default: .github/workflows)
-  --include-glob "glob1 glob2"    Optional include globs (default: empty)
-  --organization-regexp "regex"   Optional org/person regexp (used when headers-regexp is empty)
-  --headers-regexp "regex..."     Sed regexps (one per line), use {{CURRENT_YEAR}}
-  -h, --help                      Show this help message
+  --targets targets                       Directories to scan (default: .)
+  --exclude-paths exclude_paths           Paths to exclude (default: .github/workflows)
+  --include-glob include_glob             Optional include globs (default: empty)
+  --organization-regexp organization_regexp
+                                          Optional org/person regexp (used when --headers-regexp is empty)
+  --headers-regexp headers_regexp         Sed regexps (one per line), use {{CURRENT_YEAR}}
+  -h, --help                              Show this help message
+
+For list options, pass a single option-argument and separate items with spaces, for example:
+  --targets ". src scripts"
+  --exclude-paths ".github/workflows build"
+  --include-glob "**/*.{sh,py,js}"
 USAGE
 }
 

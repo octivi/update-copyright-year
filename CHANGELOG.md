@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2026-02-18
+## [1.3.0] - 2026-02-19
 
 ### Added
 
@@ -41,7 +41,7 @@
 
 - Add a GitHub Action that updates copyright years in matched file headers ([`3020ead`](https://github.com/octivi/update-copyright-year/commit/3020ead)) (Marcin Engelmann)
 
-[Unreleased]: https://github.com/octivi/update-copyright-year/compare/v1.2.0...HEAD
+[1.3.0]: https://github.com/octivi/update-copyright-year/releases/tag/v1.3.0
 [1.2.0]: https://github.com/octivi/update-copyright-year/releases/tag/v1.2.0
 [1.1.1]: https://github.com/octivi/update-copyright-year/releases/tag/v1.1.1
 [1.1.0]: https://github.com/octivi/update-copyright-year/releases/tag/v1.1.0

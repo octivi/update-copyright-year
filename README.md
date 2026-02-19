@@ -201,3 +201,5 @@ If you are interested in other GitHub Actions we build, see:
 
 Maintained by the [Octivi DevOps team](https://octivi.com/devops). Contributions are welcome via
 pull requests.
+
+Built with [Octivi Bash Boilerplate](https://github.com/octivi/bash-boilerplate).

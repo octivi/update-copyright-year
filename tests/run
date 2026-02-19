@@ -11,6 +11,7 @@
 #
 # Source code repository https://github.com/octivi/update-copyright-year
 
+# >>> OBB:BEGIN variant=header
 # Octivi Bash Boilerplate (OBB) Header
 # Part of Octivi Bash Boilerplate https://github.com/octivi/bash-boilerplate
 ################################################################################
@@ -31,6 +32,8 @@ readonly __my_args
 # Set IFS to just newline and tab
 IFS=$'\n\t'
 ################################################################################
+# <<< OBB:END
+
 UPDATE_COPYRIGHT_YEAR="$(cd "${__my_dir}/.." && pwd)/update-copyright-year"
 
 TMP_DIRS=()

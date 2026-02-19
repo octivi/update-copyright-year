@@ -31,21 +31,21 @@ Keeps year ranges in headers accurate with minimal maintenance, especially for r
 
 ## Getting started
 
-1) Add the action to your workflow (see "Example workflow" below).
-2) Optionally set `targets`, `exclude_paths`, `organization_regexp`, and `headers_regexp`.
-3) Run the workflow and review changes (optionally create a PR in your workflow).
+1. Add the action to your workflow (see "Example workflow" below).
+2. Optionally set `targets`, `exclude_paths`, `organization_regexp`, and `headers_regexp`.
+3. Run the workflow and review changes (optionally create a PR in your workflow).
 
 ## Inputs
 
-| Name | Required | Default | Description |
-| --- | --- | --- | --- |
-| `targets` | No | `.` | Directories to scan (space-, comma- or newline-separated), e.g. `. src scripts` |
-| `exclude_paths` | No | `.github/workflows` | Paths to exclude (space-, comma- or newline-separated), e.g. `.github/workflows build`. Relative paths are resolved against each target; absolute paths are supported |
-| `include_glob` | No | *(empty)* | Optional glob patterns to include (space-, comma- or newline-separated), e.g. `**/*.{sh,py,js}` |
-| `organization_regexp` | No | *(empty)* | Optional regexp snippet for the organization/person name after the year (used only when `headers_regexp` is empty) |
-| `headers_regexp` | No | *(see below)* | Array of `sed` regexps (one per line). Use `{{CURRENT_YEAR}}` as a placeholder |
-| `dry_run` | No | `false` | If `true`, print planned changes without modifying files |
-| `verbose` | No | `false` | If `true`, print detailed logs |
+| Name                  | Required | Default             | Description                                                                                                                                                           |
+| --------------------- | -------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targets`             | No       | `.`                 | Directories to scan (space-, comma- or newline-separated), e.g. `. src scripts`                                                                                       |
+| `exclude_paths`       | No       | `.github/workflows` | Paths to exclude (space-, comma- or newline-separated), e.g. `.github/workflows build`. Relative paths are resolved against each target; absolute paths are supported |
+| `include_glob`        | No       | _(empty)_           | Optional glob patterns to include (space-, comma- or newline-separated), e.g. `**/*.{sh,py,js}`                                                                       |
+| `organization_regexp` | No       | _(empty)_           | Optional regexp snippet for the organization/person name after the year (used only when `headers_regexp` is empty)                                                    |
+| `headers_regexp`      | No       | _(see below)_       | Array of `sed` regexps (one per line). Use `{{CURRENT_YEAR}}` as a placeholder                                                                                        |
+| `dry_run`             | No       | `false`             | If `true`, print planned changes without modifying files                                                                                                              |
+| `verbose`             | No       | `false`             | If `true`, print detailed logs                                                                                                                                        |
 
 ## CLI usage
 

@@ -196,6 +196,7 @@ If you are interested in other GitHub Actions we build, see:
 
 - [`octivi/update-securitytxt-expires`](https://github.com/octivi/update-securitytxt-expires) - Updates the `Expires` field in `security.txt` files to a future date so published security contact metadata stays current
 - [`octivi/cloudflare-cache-purge`](https://github.com/octivi/cloudflare-cache-purge) - Purges Cloudflare cache via Cloudflare API
+- [`octivi/release-notes-from-changelog`](https://github.com/octivi/release-notes-from-changelog) - Extracts Release Notes from Changelog
 
 ## Maintainers and contributors
 
